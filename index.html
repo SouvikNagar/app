@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Real Cost of Habit | Financial Impact Calculator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        
+        .mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        
+        .habit-card {
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            cursor: pointer;
+        }
+        
+        .habit-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+        }
+        
+        .habit-card.active {
+            border-color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+        }
+        
+        .habit-card.negative {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.1);
+        }
+        
+        .habit-card.negative.active {
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+        }
+        
+        .money-counter {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-shadow: 0 0 30px rgba(16, 185, 129, 0.3);
+        }
+        
+        .money-counter.negative {
+            background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 30px rgba(239, 68, 68, 0.3);
+        }
+        
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 8px;
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: #10b981;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+            transition: all 0.2s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #10b981;
+        }
+        
+        .toggle-switch::after {
+            content: '';
+            position: absolute;
+            width: 26px;
+            height: 26px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: all 0.3s;
+        }
+        
+        .toggle-switch.active::after {
+            left: 32px;
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .shock-value {
+            animation: shock 0.5s ease-out;
+        }
+        
+        @keyframes shock {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+        
+        .opportunity-card {
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+        
+        .opportunity-card:hover {
+            transform: scale(1.02);
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #34d399);
+            transition: width 1s ease-out;
+            border-radius: 4px;
+        }
+        
+        .time-marker {
+            position: relative;
+            padding-left: 20px;
+        }
+        
+        .time-marker::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 12px;
+            height: 12px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+        }
+        
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: #10b981;
+            position: absolute;
+            animation: confetti-fall 3s linear forwards;
+        }
+        
+        @keyframes confetti-fall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <!-- Header -->
+    <header class="max-w-7xl mx-auto mb-8 text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-semibold mb-4">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            Reality Check Calculator
+        </div>
+        <h1 class="text-4xl md:text-6xl font-bold mb-4 bg-gradient-to-r from-red-400 via-orange-400 to-yellow-400 bg-clip-text text-transparent">
+            The Real Cost of Habit
+        </h1>
+        <p class="text-gray-400 text-lg max-w-2xl mx-auto">
+            Discover how much your daily habits are actually costing you over a lifetime. Small changes create massive impacts.
+        </p>
+    </header>
+
+    <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+        
+        <!-- Left Panel: Habit Selection -->
+        <div class="lg:col-span-1 space-y-6">
+            
+            <!-- Preset Habits -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 18.657A8 8 0 016.343 7.343S7 9 9 10c0-2 .5-5 2.986-7C14 5 16.09 5.777 17.656 7.343A7.975 7.975 0 0120 13a7.975 7.975 0 01-2.343 5.657z"></path></svg>
+                    Common Habits
+                </h2>
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="selectHabit('coffee')" class="habit-card glass-panel rounded-xl p-4 text-left border-2 border-transparent" id="btn-coffee">
+                        <div class="text-2xl mb-2">☕</div>
+                        <div class="font-semibold text-sm">Daily Coffee</div>
+                        <div class="text-xs text-gray-400 mt-1">$5-7/day</div>
+                    </button>
+                    
+                    <button onclick="selectHabit('smoking')" class="habit-card glass-panel rounded-xl p-4 text-left border-2 border-transparent" id="btn-smoking">
+                        <div class="text-2xl mb-2">🚬</div>
+                        <div class="font-semibold text-sm">Smoking</div>
+                        <div class="text-xs text-gray-400 mt-1">$15-20/day</div>
+                    </button>
+                    
+                    <button onclick="selectHabit('alcohol')" class="habit-card glass-panel rounded-xl p-4 text-left border-2 border-transparent" id="btn-alcohol">
+                        <div class="text-2xl mb-2">🍺</div>
+                        <div class="font-semibold text-sm">Alcohol</div>
+                        <div class="text-xs text-gray-400 mt-1">$20-50/day</div>
+                    </button>
+                    
+                    <button onclick="selectHabit('fastfood')" class="habit-card glass-panel rounded-xl p-4 text-left border-2 border-transparent" id="btn-fastfood">
+                        <div class="text-2xl mb-2">🍔</div>
+                        <div class="font-semibold text-sm">Fast Food</div>
+                        <div class="text-xs text-gray-400 mt-1">$10-15/day</div>
+                    </button>
+                    
+                    <button onclick="selectHabit('subscriptions')" class="habit-card glass-panel rounded-xl p-4 text-left border-2 border-transparent" id="btn-subscriptions">
+                        <div class="text-2xl mb-2">📱</div>
+                        <div class="font-semibold text-sm">Subscriptions</div>
+                        <div class="text-xs text-gray-400 mt-1">$50-200/mo</div>
+                    </button>
+                    
+                    <button onclick="selectHabit('gym')" class="habit-card glass-panel rounded-xl p-4 text-left border-2 border-transparent" id="btn-gym">
+                        <div class="text-2xl mb-2">💪</div>
+                        <div class="font-semibold text-sm">Unused Gym</div>
+                        <div class="text-xs text-gray-400 mt-1">$30-80/mo</div>
+                    </button>
+                    
+                    <button onclick="selectHabit('lottery')" class="habit-card glass-panel rounded-xl p-4 text-left border-2 border-transparent" id="btn-lottery">
+                        <div class="text-2xl mb-2">🎰</div>
+                        <div class="font-semibold text-sm">Lottery/Gambling</div>
+                        <div class="text-xs text-gray-400 mt-1">$10-50/day</div>
+                    </button>
+                    
+                    <button onclick="selectHabit('custom')" class="habit-card glass-panel rounded-xl p-4 text-left border-2 border-transparent border-dashed" id="btn-custom">
+                        <div class="text-2xl mb-2">✏️</div>
+                        <div class="font-semibold text-sm">Custom</div>
+                        <div class="text-xs text-gray-400 mt-1">Your habit</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Custom Input -->
+            <div class="glass-panel rounded-2xl p-6" id="custom-input" style="display: none;">
+                <h3 class="font-bold mb-4">Custom Habit Details</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-sm text-gray-400 block mb-2">Habit Name</label>
+                        <input type="text" id="custom-name" placeholder="e.g., Energy Drinks" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-emerald-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="text-sm text-gray-400 block mb-2">Cost per day ($)</label>
+                        <input type="number" id="custom-cost" placeholder="5.00" step="0.01" class="w-full bg-black/30 border border-white/10 rounded-lg px-4 py-2 text-white focus:border-emerald-500 focus:outline-none">
+                    </div>
+                    <button onclick="addCustomHabit()" class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold py-2 rounded-lg transition-colors">
+                        Add Habit
+                    </button>
+                </div>
+            </div>
+
+            <!-- Current Selection -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-bold mb-4 flex items-center gap-2">
+                    <span id="selected-icon">☕</span>
+                    <span id="selected-name">Daily Coffee</span>
+                </h3>
+                
+                <div class="space-y-6">
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm text-gray-400">Daily Cost</label>
+                            <span class="text-emerald-400 font-mono font-bold" id="daily-cost-display">$5.00</span>
+                        </div>
+                        <input type="range" id="daily-cost" min="0.5" max="100" step="0.5" value="5" oninput="updateCalculation()">
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm text-gray-400">Days per Week</label>
+                            <span class="text-emerald-400 font-mono font-bold" id="days-display">7</span>
+                        </div>
+                        <input type="range" id="days-per-week" min="1" max="7" step="1" value="7" oninput="updateCalculation()">
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm text-gray-400">Years of Habit</label>
+                            <span class="text-emerald-400 font-mono font-bold" id="years-display">10</span>
+                        </div>
+                        <input type="range" id="years" min="1" max="50" step="1" value="10" oninput="updateCalculation()">
+                    </div>
+                    
+                    <div>
+                        <div class="flex justify-between mb-2">
+                            <label class="text-sm text-gray-400">Annual Increase (%)</label>
+                            <span class="text-emerald-400 font-mono font-bold" id="inflation-display">3%</span>
+                        </div>
+                        <input type="range" id="inflation" min="0" max="10" step="0.5" value="3" oninput="updateCalculation()">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Center Panel: Real-Time Results -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Main Counter -->
+            <div class="glass-panel rounded-2xl p-8 text-center relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-r from-emerald-500/10 to-transparent opacity-0 transition-opacity" id="savings-glow"></div>
+                
+                <div class="relative z-10">
+                    <div class="text-sm text-gray-400 uppercase tracking-wider mb-2">Total Cost Over Time</div>
+                    <div class="text-6xl md:text-8xl font-bold money-counter negative mono shock-value" id="total-cost">
+                        $18,250
+                    </div>
+                    <div class="text-gray-400 mt-2" id="time-description">Over 10 years</div>
+                    
+                    <div class="mt-6 flex justify-center gap-4">
+                        <button onclick="toggleTimeframe('1year')" class="time-btn px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors" data-time="1">1 Year</button>
+                        <button onclick="toggleTimeframe('5years')" class="time-btn px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors" data-time="5">5 Years</button>
+                        <button onclick="toggleTimeframe('10years')" class="time-btn px-4 py-2 rounded-lg bg-emerald-500/20 text-emerald-400 text-sm transition-colors" data-time="10">10 Years</button>
+                        <button onclick="toggleTimeframe('20years')" class="time-btn px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors" data-time="20">20 Years</button>
+                        <button onclick="toggleTimeframe('lifetime')" class="time-btn px-4 py-2 rounded-lg bg-white/5 hover:bg-white/10 text-sm transition-colors" data-time="40">Lifetime</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Breakdown Cards -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="glass-panel rounded-xl p-4 text-center">
+                    <div class="text-xs text-gray-400 uppercase mb-1">Daily</div>
+                    <div class="text-2xl font-bold text-red-400 mono" id="breakdown-daily">$5.00</div>
+                </div>
+                <div class="glass-panel rounded-xl p-4 text-center">
+                    <div class="text-xs text-gray-400 uppercase mb-1">Weekly</div>
+                    <div class="text-2xl font-bold text-orange-400 mono" id="breakdown-weekly">$35</div>
+                </div>
+                <div class="glass-panel rounded-xl p-4 text-center">
+                    <div class="text-xs text-gray-400 uppercase mb-1">Monthly</div>
+                    <div class="text-2xl font-bold text-yellow-400 mono" id="breakdown-monthly">$152</div>
+                </div>
+                <div class="glass-panel rounded-xl p-4 text-center">
+                    <div class="text-xs text-gray-400 uppercase mb-1">Yearly</div>
+                    <div class="text-2xl font-bold text-red-500 mono" id="breakdown-yearly">$1,825</div>
+                </div>
+            </div>
+
+            <!-- Chart -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-bold mb-4">Cumulative Cost Over Time</h3>
+                <canvas id="costChart" height="250"></canvas>
+            </div>
+
+            <!-- Opportunity Cost -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-bold mb-4 flex items-center gap-2 text-emerald-400">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                    What If You Invested Instead?
+                </h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                    <div class="opportunity-card glass-panel rounded-xl p-4 border border-emerald-500/30" onclick="selectReturn(5)">
+                        <div class="text-sm text-gray-400">Conservative</div>
+                        <div class="text-2xl font-bold text-emerald-400">5% APY</div>
+                        <div class="text-xs text-gray-500 mt-1">Savings account</div>
+                    </div>
+                    <div class="opportunity-card glass-panel rounded-xl p-4 border border-emerald-500/30 bg-emerald-500/10" onclick="selectReturn(8)" id="return-8">
+                        <div class="text-sm text-gray-400">Moderate</div>
+                        <div class="text-2xl font-bold text-emerald-400">8% APY</div>
+                        <div class="text-xs text-gray-500 mt-1">Index funds</div>
+                    </div>
+                    <div class="opportunity-card glass-panel rounded-xl p-4 border border-emerald-500/30" onclick="selectReturn(12)">
+                        <div class="text-sm text-gray-400">Aggressive</div>
+                        <div class="text-2xl font-bold text-emerald-400">12% APY</div>
+                        <div class="text-xs text-gray-500 mt-1">Growth portfolio</div>
+                    </div>
+                </div>
+
+                <div class="bg-emerald-500/10 border border-emerald-500/30 rounded-xl p-6 text-center">
+                    <div class="text-sm text-gray-400 mb-2">Potential Investment Value</div>
+                    <div class="text-5xl font-bold text-emerald-400 mono shock-value" id="investment-value">$27,432</div>
+                    <div class="text-sm text-emerald-300 mt-2">That's <span id="gain-amount" class="font-bold">$9,182</span> more than just saving!</div>
+                </div>
+            </div>
+
+            <!-- What You Could Buy -->
+            <div class="glass-panel rounded-2xl p-6">
+                <h3 class="font-bold mb-4">What You Could Have Bought Instead</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="opportunities-list">
+                    <!-- Dynamically populated -->
+                </div>
+            </div>
+
+            <!-- Action Plan -->
+            <div class="glass-panel rounded-2xl p-6 border-2 border-emerald-500/30">
+                <h3 class="font-bold mb-4 text-emerald-400">Your Action Plan</h3>
+                
+                <div class="space-y-4">
+                    <div class="flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold flex-shrink-0">1</div>
+                        <div>
+                            <h4 class="font-semibold">Reduce by 50%</h4>
+                            <p class="text-sm text-gray-400">Cut your <span id="habit-name-plan">coffee</span> habit in half and save <span class="text-emerald-400 font-mono" id="save-half">$9,125</span> over 10 years</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold flex-shrink-0">2</div>
+                        <div>
+                            <h4 class="font-semibold">Find Alternatives</h4>
+                            <p class="text-sm text-gray-400">Brew coffee at home instead of buying daily. Same caffeine, fraction of the cost.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start gap-4">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold flex-shrink-0">3</div>
+                        <div>
+                            <h4 class="font-semibold">Invest the Difference</h4>
+                            <p class="text-sm text-gray-400">Redirect saved money to investments. Potential value: <span class="text-emerald-400 font-mono" id="invest-potential">$27,432</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <button onclick="celebrateSavings()" class="w-full mt-6 bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-4 rounded-xl transition-all transform hover:scale-105 flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    I'm Ready to Change!
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Habit presets
+        const habits = {
+            coffee: { name: 'Daily Coffee', icon: '☕', cost: 5, days: 7 },
+            smoking: { name: 'Smoking', icon: '🚬', cost: 15, days: 7 },
+            alcohol: { name: 'Alcohol', icon: '🍺', cost: 25, days: 3 },
+            fastfood: { name: 'Fast Food', icon: '🍔', cost: 12, days: 3 },
+            subscriptions: { name: 'Subscriptions', icon: '📱', cost: 4, days: 7 }, // daily equivalent
+            gym: { name: 'Unused Gym', icon: '💪', cost: 2, days: 7 }, // daily equivalent
+            lottery: { name: 'Lottery/Gambling', icon: '🎰', cost: 20, days: 2 },
+            custom: { name: 'Custom Habit', icon: '✏️', cost: 5, days: 7 }
+        };
+
+        let currentHabit = 'coffee';
+        let chart;
+        let selectedReturn = 8;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            selectHabit('coffee');
+            initChart();
+        });
+
+        function selectHabit(habitKey) {
+            // Update UI
+            document.querySelectorAll('.habit-card').forEach(card => {
+                card.classList.remove('active', 'negative');
+            });
+            document.getElementById(`btn-${habitKey}`).classList.add('active', 'negative');
+            
+            currentHabit = habitKey;
+            const habit = habits[habitKey];
+            
+            // Show/hide custom input
+            document.getElementById('custom-input').style.display = habitKey === 'custom' ? 'block' : 'none';
+            
+            // Update inputs
+            document.getElementById('selected-icon').textContent = habit.icon;
+            document.getElementById('selected-name').textContent = habit.name;
+            document.getElementById('habit-name-plan').textContent = habit.name.toLowerCase();
+            
+            if (habitKey !== 'custom') {
+                document.getElementById('daily-cost').value = habit.cost;
+                document.getElementById('days-per-week').value = habit.days;
+            }
+            
+            updateCalculation();
+        }
+
+        function addCustomHabit() {
+            const name = document.getElementById('custom-name').value || 'Custom Habit';
+            const cost = parseFloat(document.getElementById('custom-cost').value) || 5;
+            
+            habits.custom.name = name;
+            habits.custom.cost = cost;
+            
+            document.getElementById('selected-name').textContent = name;
+            document.getElementById('habit-name-plan').textContent = name.toLowerCase();
+            document.getElementById('daily-cost').value = cost;
+            
+            updateCalculation();
+        }
+
+        function updateCalculation() {
+            const dailyCost = parseFloat(document.getElementById('daily-cost').value);
+            const daysPerWeek = parseInt(document.getElementById('days-per-week').value);
+            const years = parseInt(document.getElementById('years').value);
+            const inflation = parseFloat(document.getElementById('inflation').value) / 100;
+            
+            // Update displays
+            document.getElementById('daily-cost-display').textContent = `$${dailyCost.toFixed(2)}`;
+            document.getElementById('days-display').textContent = daysPerWeek;
+            document.getElementById('years-display').textContent = years;
+            document.getElementById('inflation-display').textContent = `${(inflation * 100).toFixed(1)}%`;
+            
+            // Calculate costs
+            const weeklyCost = dailyCost * daysPerWeek;
+            const monthlyCost = weeklyCost * 4.33;
+            const yearlyCost = weeklyCost * 52;
+            
+            let totalCost = 0;
+            let yearlyData = [];
+            
+            for (let i = 0; i < years; i++) {
+                const yearCost = yearlyCost * Math.pow(1 + inflation, i);
+                totalCost += yearCost;
+                yearlyData.push(totalCost);
+            }
+            
+            // Update main counter with animation
+            const totalElement = document.getElementById('total-cost');
+            animateValue(totalElement, parseFloat(totalElement.textContent.replace(/[$,]/g, '')), totalCost, 500, true);
+            
+            // Update breakdown
+            document.getElementById('breakdown-daily').textContent = `$${dailyCost.toFixed(2)}`;
+            document.getElementById('breakdown-weekly').textContent = `$${weeklyCost.toFixed(0)}`;
+            document.getElementById('breakdown-monthly').textContent = `$${monthlyCost.toFixed(0)}`;
+            document.getElementById('breakdown-yearly').textContent = `$${yearlyCost.toFixed(0)}`;
+            
+            // Update time description
+            document.getElementById('time-description').textContent = `Over ${years} years (${daysPerWeek} days/week)`;
+            
+            // Update chart
+            updateChart(yearlyData);
+            
+            // Calculate investment opportunity
+            calculateInvestment(yearlyCost, years, inflation);
+            
+            // Update opportunities list
+            updateOpportunities(totalCost);
+            
+            // Update action plan
+            document.getElementById('save-half').textContent = `$${(totalCost / 2).toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+        }
+
+        function calculateInvestment(yearlyCost, years, inflation) {
+            let totalInvested = 0;
+            let investmentValue = 0;
+            const monthlyReturn = Math.pow(1 + selectedReturn / 100, 1/12) - 1;
+            
+            for (let year = 0; year < years; year++) {
+                const yearContribution = yearlyCost * Math.pow(1 + inflation, year);
+                totalInvested += yearContribution;
+                
+                // Monthly compounding
+                for (let month = 0; month < 12; month++) {
+                    investmentValue += yearContribution / 12;
+                    investmentValue *= (1 + monthlyReturn);
+                }
+            }
+            
+            const gain = investmentValue - totalInvested;
+            
+            document.getElementById('investment-value').textContent = `$${investmentValue.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+            document.getElementById('gain-amount').textContent = `$${gain.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+            document.getElementById('invest-potential').textContent = `$${investmentValue.toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+        }
+
+        function selectReturn(rate) {
+            selectedReturn = rate;
+            document.querySelectorAll('.opportunity-card').forEach(card => {
+                card.classList.remove('bg-emerald-500/10');
+            });
+            event.currentTarget.classList.add('bg-emerald-500/10');
+            updateCalculation();
+        }
+
+        function toggleTimeframe(period) {
+            const timeMap = {
+                '1year': 1,
+                '5years': 5,
+                '10years': 10,
+                '20years': 20,
+                'lifetime': 40
+            };
+            
+            const years = timeMap[period];
+            document.getElementById('years').value = years;
+            
+            // Update button styles
+            document.querySelectorAll('.time-btn').forEach(btn => {
+                btn.classList.remove('bg-emerald-500/20', 'text-emerald-400');
+                btn.classList.add('bg-white/5');
+            });
+            event.target.classList.remove('bg-white/5');
+            event.target.classList.add('bg-emerald-500/20', 'text-emerald-400');
+            
+            updateCalculation();
+        }
+
+        function updateOpportunities(totalCost) {
+            const opportunities = [
+                { name: 'New Car', cost: 25000, icon: '🚗' },
+                { name: 'House Down Payment', cost: 50000, icon: '🏠' },
+                { name: 'College Fund', cost: 100000, icon: '🎓' },
+                { name: 'World Trip', cost: 15000, icon: '✈️' },
+                { name: 'Emergency Fund', cost: 10000, icon: '🏥' },
+                { name: 'Retirement Boost', cost: 200000, icon: '🏖️' }
+            ];
+            
+            const container = document.getElementById('opportunities-list');
+            container.innerHTML = '';
+            
+            opportunities.forEach(opp => {
+                const percentage = Math.min((totalCost / opp.cost) * 100, 100);
+                const affordable = totalCost >= opp.cost;
+                
+                const div = document.createElement('div');
+                div.className = `glass-panel rounded-xl p-4 flex items-center gap-4 ${affordable ? 'border-emerald-500/30 bg-emerald-500/5' : ''}`;
+                div.innerHTML = `
+                    <div class="text-3xl">${opp.icon}</div>
+                    <div class="flex-1">
+                        <div class="flex justify-between mb-1">
+                            <span class="font-semibold ${affordable ? 'text-emerald-400' : ''}">${opp.name}</span>
+                            <span class="text-sm text-gray-400">$${opp.cost.toLocaleString()}</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill ${affordable ? 'bg-emerald-500' : ''}" style="width: ${percentage}%"></div>
+                        </div>
+                        <div class="text-xs text-gray-500 mt-1">
+                            ${affordable ? '✓ Fully funded!' : `${percentage.toFixed(0)}% of cost`}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function initChart() {
+            const ctx = document.getElementById('costChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: Array.from({length: 10}, (_, i) => `Year ${i + 1}`),
+                    datasets: [{
+                        label: 'Cumulative Cost',
+                        data: [],
+                        borderColor: '#ef4444',
+                        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }, {
+                        label: 'If Invested',
+                        data: [],
+                        borderColor: '#10b981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    },
+                    plugins: {
+                        legend: {
+                            labels: { color: '#9ca3af' }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                color: '#9ca3af',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        },
+                        x: {
+                            ticks: { color: '#9ca3af' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
+                        }
+                    }
+                }
+            });
+        }
+
+        function updateChart(yearlyData) {
+            if (!chart) return;
+            
+            const years = yearlyData.length;
+            chart.data.labels = yearlyData.map((_, i) => `Year ${i + 1}`);
+            chart.data.datasets[0].data = yearlyData;
+            
+            // Calculate investment data for chart
+            const dailyCost = parseFloat(document.getElementById('daily-cost').value);
+            const daysPerWeek = parseInt(document.getElementById('days-per-week').value);
+            const yearlyCost = dailyCost * daysPerWeek * 52;
+            const inflation = parseFloat(document.getElementById('inflation').value) / 100;
+            const monthlyReturn = Math.pow(1 + selectedReturn / 100, 1/12) - 1;
+            
+            let investmentData = [];
+            let investmentValue = 0;
+            
+            for (let year = 0; year < years; year++) {
+                const yearContribution = yearlyCost * Math.pow(1 + inflation, year);
+                for (let month = 0; month < 12; month++) {
+                    investmentValue += yearContribution / 12;
+                    investmentValue *= (1 + monthlyReturn);
+                }
+                investmentData.push(investmentValue);
+            }
+            
+            chart.data.datasets[1].data = investmentData;
+            chart.update();
+        }
+
+        function animateValue(element, start, end, duration, isCurrency = false) {
+            const range = end - start;
+            const minTimer = 50;
+            let stepTime = Math.abs(Math.floor(duration / range));
+            stepTime = Math.max(stepTime, minTimer);
+            
+            let startTime = new Date().getTime();
+            let endTime = startTime + duration;
+            let timer;
+            
+            function run() {
+                let now = new Date().getTime();
+                let remaining = Math.max((endTime - now) / duration, 0);
+                let value = Math.round(end - (remaining * range));
+                
+                if (isCurrency) {
+                    element.textContent = '$' + value.toLocaleString('en-US', {maximumFractionDigits: 0});
+                } else {
+                    element.textContent = value;
+                }
+                
+                if (value == end) {
+                    clearInterval(timer);
+                }
+            }
+            
+            timer = setInterval(run, stepTime);
+            run();
+        }
+
+        function celebrateSavings() {
+            // Create confetti
+            for (let i = 0; i < 50; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 100 + 'vw';
+                    confetti.style.backgroundColor = ['#10b981', '#34d399', '#6ee7b7', '#059669'][Math.floor(Math.random() * 4)];
+                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    document.body.appendChild(confetti);
+                    setTimeout(() => confetti.remove(), 4000);
+                }, i * 30);
+            }
+            
+            // Show success message
+            const btn = event.target;
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                Great Decision! Start Today!
+            `;
+            btn.classList.remove('bg-emerald-500');
+            btn.classList.add('bg-green-600');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.classList.add('bg-emerald-500');
+                btn.classList.remove('bg-green-600');
+            }, 3000);
+        }
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === '1') selectHabit('coffee');
+            if (e.key === '2') selectHabit('smoking');
+            if (e.key === '3') selectHabit('alcohol');
+            if (e.key === '4') selectHabit('fastfood');
+        });
+    </script>
+</body>
+</html>
